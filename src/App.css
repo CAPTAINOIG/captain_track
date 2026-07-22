@@ -1,0 +1,69 @@
+/* ── Animation utilities ── */
+.animate-slide-up {
+  animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+.animate-slide-up-delay-1 {
+  animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.1s both;
+}
+
+.animate-slide-up-delay-2 {
+  animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+}
+
+.animate-slide-up-delay-3 {
+  animation: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+/* ── Progress bar gradient ── */
+.progress-gradient {
+  background: linear-gradient(90deg, var(--accent-start), var(--accent-end));
+  background-size: 200% 100%;
+  animation: shimmer 3s linear infinite;
+}
+
+/* ── Animated gradient border ── */
+.animated-gradient-border {
+  position: relative;
+}
+.animated-gradient-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(var(--rotation, 0deg), var(--accent-start), var(--accent-end), var(--accent-start));
+  background-size: 300% 300%;
+  animation: gradient-shift 4s ease infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.animated-gradient-border:hover::after {
+  opacity: 1;
+}
+
+/* ── Leaflet dark tiles ── */
+.leaflet-container {
+  background: var(--bg-surface) !important;
+}
+
+/* ── Chart dark tooltip override ── */
+.recharts-default-tooltip {
+  background: rgba(17, 24, 39, 0.95) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+}
