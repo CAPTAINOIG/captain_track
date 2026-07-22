@@ -9,12 +9,12 @@ import { useGetActivitiesDetails } from "../api/track";
 export const ActivityDetailsPage = () => {
   const { id } = useParams();
 
-  const {data: activityData, isPending: activitiesDetailsLoading, isError: isActivitiesDetailsError} = useGetActivitiesDetails(id)
-  
+  const { data: activityData, isPending: activitiesDetailsLoading, isError: isActivitiesDetailsError } = useGetActivitiesDetails(id)
+
   // Load from localStorage and merge with dummy data
   const savedActivities = JSON.parse(localStorage.getItem('captainTrackActivities') || '[]');
   const allActivities = [...savedActivities, ...dummyActivities];
-  
+
   const fallbackActivity = allActivities.find((a) => a.id === parseInt(id));
   const activity = activityData?.data || fallbackActivity;
   const user = dummyUsers.find((u) => u.id === activity?.userId);
@@ -131,7 +131,7 @@ export const ActivityDetailsPage = () => {
 
           <div className="grid grid-cols-4 gap-4 py-6 border-y border-white/[0.06] mb-6">
             <div className="text-center">
-              <div className="text-2xl font-bold text-[#FF6B00]">{activity.distance}</div>
+              <div className="text-lg font-bold text-[#FF6B00]">{typeof activity.distance === 'number' ? activity.distance.toFixed(2) : activity.distance}</div>
               <div className="text-xs text-slate-500">km</div>
             </div>
             <div className="text-center">
