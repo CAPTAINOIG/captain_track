@@ -4,12 +4,13 @@ import { BottomNav } from "../components/layout/BottomNav";
 import { dummyActivities, dummyUsers } from "../data/dummyData";
 import { formatTime, formatPace, formatDate } from "../utils/formatters";
 import { MapContainer, TileLayer, Polyline } from "react-leaflet";
-import { useGetActivitiesDetails } from "../api/track";
+import { useGetActivitiesDetails, useGetProfilePicture } from "../api/track";
 
 export const ActivityDetailsPage = () => {
   const { id } = useParams();
 
   const { data: activityData, isPending: activitiesDetailsLoading, isError: isActivitiesDetailsError } = useGetActivitiesDetails(id)
+   const { data: profilePictureData, isPending: getProfilePictureLoading, refetch } = useGetProfilePicture();
 
   // Load from localStorage and merge with dummy data
   const savedActivities = JSON.parse(localStorage.getItem('captainTrackActivities') || '[]');
@@ -119,10 +120,9 @@ export const ActivityDetailsPage = () => {
           </div>
         </div>
 
-        {/* Activity Info */}
         <div className="glass-card p-6 mb-6 animate-slide-up-delay-1">
           <div className="flex items-center gap-4 mb-6">
-            <img src={user?.avatar} alt={user?.name} className="w-14 h-14 rounded-full ring-2 ring-white/10" />
+            <img src={profilePictureData?.data?.url} alt="" className="w-14 h-14 rounded-full ring-2 ring-white/10" />
             <div>
               <div className="font-bold text-white">{user?.name}</div>
               <div className="text-sm text-slate-400">{formatDate(activity.date)}</div>

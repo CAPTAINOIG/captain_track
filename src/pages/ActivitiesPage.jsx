@@ -5,10 +5,11 @@ import { BottomNav } from "../components/layout/BottomNav";
 import { dummyActivities, dummyUsers } from "../data/dummyData";
 import { formatTime, formatPace, formatDate } from "../utils/formatters";
 import { MapContainer, TileLayer, Polyline } from "react-leaflet";
-import { useGetActivities } from "../api/track";
+import { useGetActivities, useGetProfilePicture } from "../api/track";
 
 export const ActivitiesPage = () => {
   const { data: activities = [], isPending: activitiesLoading, isError: isActivitiesError } = useGetActivities();
+  const { data: profilePictureData, isPending: getProfilePictureLoading, refetch } = useGetProfilePicture();
 
   const [search, setSearch] = useState("");
 
@@ -93,8 +94,8 @@ export const ActivitiesPage = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
                           <img
-                            src={user?.avatar}
-                            alt={user?.name}
+                            src={profilePictureData?.data?.url}
+                            alt=""
                             className="w-10 h-10 rounded-full ring-2 ring-white/10"
                           />
                           <div>
