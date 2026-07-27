@@ -14,6 +14,7 @@ import "leaflet/dist/leaflet.css";
 import { FaPlay, FaPause, FaStop } from "react-icons/fa";
 import { useCreateActivity } from "../api/track";
 import { toast } from "sonner";
+import useRecordStore from "../../store/recordStore";
 
 // Calculate distance between two lat/lng points in km using Haversine formula
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -48,13 +49,22 @@ export const RecordRunPage = () => {
   } = useCreateActivity();
 
   const navigate = useNavigate();
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [time, setTime] = useState(0);
-  const [distance, setDistance] = useState(0);
-  const [calories, setCalories] = useState(0);
-  const [position, setPosition] = useState([40.7128, -74.006]); // Default to NYC
-  const [path, setPath] = useState([]); // Array of [lat, lng] points
+
+  const time = useRecordStore((state) => state.time)
+  const distance = useRecordStore((state) => state.distance)
+  const calories = useRecordStore((state) => state.calories)
+  const position = useRecordStore((state) => state.position)
+  const path = useRecordStore((state) => state.path)
+  const isRunning = useRecordStore((state) => state.isRunning)
+  const isPaused = useRecordStore((state) => state.isPaused)
+  const setTime = useRecordStore((state) => state.setTime)
+  const setDistance = useRecordStore((state) => state.setDistance)
+  const setCalories = useRecordStore((state) => state.setCalories)
+  const setPosition = useRecordStore((state) => state.setPosition)
+  const setPath = useRecordStore((state) => state.setPath)
+  const setIsRunning = useRecordStore((state) => state.setIsRunning)
+  const setIsPaused = useRecordStore((state) => state.setIsPaused)
+
   const watchId = useRef(null);
   const lastPosition = useRef(null);
   const [locationError, setLocationError] = useState(null);
@@ -281,7 +291,7 @@ export const RecordRunPage = () => {
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
             <LiveMap isRunning={isRunning} position={position} />
             <Marker position={position} />
-            {path.length > 1 && (
+            {path?.length > 1 && (
               <Polyline positions={path} color="#FF6B00" weight={4} />
             )}
           </MapContainer>
