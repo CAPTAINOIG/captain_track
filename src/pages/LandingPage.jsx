@@ -13,7 +13,7 @@ export const LandingPage = () => {
 
       {/* Navbar */}
       <nav className="relative z-10 bg-transparent border-b border-white/[0.04]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 bg-gradient-to-br from-[#FF6B00] to-[#E040FB] rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-orange-500/20">
@@ -38,7 +38,7 @@ export const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="relative z-10 py-24 px-4 animate-slide-up">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto">
           <div className="text-center mb-16">
             <div className="inline-flex items-center gap-2 bg-white/[0.06] backdrop-blur-md border border-white/10 rounded-full px-4 py-1.5 text-sm text-slate-300 mb-8">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -49,7 +49,7 @@ export const LandingPage = () => {
               <br />
               <span className="gradient-text">Achieve Your Goals</span>
             </h1>
-            <p className="text-xl text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-xl text-slate-400 mb-10 mx-auto leading-relaxed">
               Join thousands of runners who are pushing their limits and achieving more every day with GPS tracking, analytics, and a thriving community.
             </p>
             <div className="flex items-center justify-center gap-4">
@@ -68,7 +68,7 @@ export const LandingPage = () => {
 
       {/* Stats Bar */}
       <section className="relative z-10 py-12 px-4 animate-slide-up-delay-1">
-        <div className="max-w-5xl mx-auto">
+        <div className="mx-auto">
           <div className="glass-card p-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               {[
@@ -89,7 +89,7 @@ export const LandingPage = () => {
 
       {/* Features Section */}
       <section className="relative z-10 py-20 px-4 animate-slide-up-delay-2">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto">
           <h2 className="text-3xl md:text-4xl font-extrabold text-white text-center mb-4 tracking-tight">
             Why Choose Captain Track?
           </h2>
@@ -141,7 +141,7 @@ export const LandingPage = () => {
 
       {/* Footer */}
       <footer className="relative z-10 border-t border-white/[0.06] py-10 px-4">
-        <div className="max-w-7xl mx-auto text-center">
+        <div className="mx-auto text-center">
           <div className="flex items-center justify-center gap-2.5 mb-4">
             <div className="w-9 h-9 bg-gradient-to-br from-[#FF6B00] to-[#E040FB] rounded-lg flex items-center justify-center text-white font-bold text-sm">
               CT

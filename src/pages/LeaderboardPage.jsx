@@ -14,7 +14,7 @@ export const LeaderboardPage = () => {
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
       <Navbar />
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 animate-slide-up">
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Leaderboard</h1>
           <p className="text-slate-400 mt-1">See how you rank against other runners</p>

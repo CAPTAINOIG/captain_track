@@ -63,7 +63,7 @@ export const ProfilePage = () => {
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
       <Toaster position="top-right" />
       <Navbar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="glass-card p-8 mb-6 text-center animate-slide-up relative overflow-hidden">
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-gradient-to-b from-[#FF6B00]/10 to-transparent rounded-full blur-3xl pointer-events-none" />
           <div className="relative z-10">

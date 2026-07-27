@@ -24,7 +24,7 @@ export const ActivityDetailsPage = () => {
     return (
       <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
         <Navbar />
-        <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Map Skeleton */}
           <div className="glass-card overflow-hidden mb-6 animate-slide-up">
             <div className="h-80 bg-white/5 animate-pulse"></div>
@@ -103,7 +103,7 @@ export const ActivityDetailsPage = () => {
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Map */}
         <div className="glass-card overflow-hidden mb-6 animate-slide-up">
           <div className="h-80">

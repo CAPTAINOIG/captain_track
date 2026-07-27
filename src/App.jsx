@@ -15,6 +15,7 @@ import { ChallengesPage } from "./pages/ChallengesPage";
 import { CommunityPage } from "./pages/CommunityPage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { SettingsPage } from "./pages/SettingsPage";
+import Admin from "./pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ function App() {
         <Route path="/community" element={<CommunityPage />} />
         <Route path="/explore" element={<ExplorePage />} />
         <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/admin" element={<Admin />} />
       </Routes>
     </Router>
     </QueryClientProvider>

@@ -64,6 +64,16 @@ export const useGetUser = () => {
   });
 };
 
+export const useGetActivitiesStats = () => {
+  return useQuery ({
+    queryKey: ["activitiesStats"],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/api/activities/stats');
+      return res.data;
+    }
+  }) 
+}
+
 export const useUploadProfilePicture = () => {
   return useMutation({
     mutationKey: ['user', 'profile-picture'],

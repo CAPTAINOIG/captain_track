@@ -7,7 +7,7 @@ export const ExplorePage = () => {
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
       <Navbar />
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 animate-slide-up">
           <h1 className="text-3xl font-extrabold text-white tracking-tight">Explore</h1>
           <p className="text-slate-400 mt-1">Discover runners and routes near you</p>
@@ -20,7 +20,7 @@ export const ExplorePage = () => {
             {dummyUsers.map((user) => (
               <div
                 key={user.id}
-                className="flex-shrink-0 glass-card glass-card-hover p-4 text-center min-w-[130px] group"
+                className="flex-shrink-0 glass-card glass-card-hover p-4 text-center min-w-[170px] group"
               >
                 <div className="relative inline-block mb-3">
                   <div className="w-14 h-14 rounded-full p-[2px] bg-gradient-to-br from-[#FF6B00] to-[#E040FB] opacity-70 group-hover:opacity-100 transition-opacity duration-300">

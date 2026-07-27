@@ -1,48 +1,50 @@
 import { Navbar } from "../components/layout/Navbar";
 import { BottomNav } from "../components/layout/BottomNav";
 import { StatCard } from "../components/common/StatCard";
-import { dummyStatistics, dummyActivities, dummyChallenges, dummyBadges } from "../data/dummyData";
 import { formatTime, formatPace, formatDate } from "../utils/formatters";
 import { FaRunning, FaClock, FaFire, FaRoute, FaMedal } from "react-icons/fa";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 import { Link } from "react-router-dom";
+import { useGetActivities, useGetActivitiesStats } from "../api/track";
+import Challenges from "./Challenges";
+import Badges from "./Badges";
+import useAuthStore from "../../store/auth";
 
 export const DashboardPage = () => {
+  const { data: activitiesStats = [], isPending: isActivitiesStatsPending, isError: isActivitiesStatsError } = useGetActivitiesStats()
+  const { data: activities = [], isPending: activitiesLoading, isError: isActivitiesError } = useGetActivities();
+  
+  const user = useAuthStore((state) => state.user);
+  const name = user?.username;
+  
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
       <Navbar />
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Greeting */}
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8 animate-slide-up">
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Hey, Alex! 👋</h1>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Hey, {name || "Alex"}! 👋</h1>
           <p className="text-slate-400 mt-1">Here's your running overview</p>
         </div>
-
-        {/* Stat Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-up-delay-1">
           <StatCard
             title="Total Distance"
-            value={`${dummyStatistics.totalDistance} km`}
+            value={`${activitiesStats.data?.totalDistance} km`}
             icon={<FaRoute />}
-            subtitle="+12% this week"
           />
           <StatCard
             title="Total Runs"
-            value={dummyStatistics.totalRuns}
+            value={activitiesStats.data?.totalRuns}
             icon={<FaRunning />}
-            subtitle="+3 this week"
           />
           <StatCard
             title="Total Time"
-            value={formatTime(dummyStatistics.totalTime)}
+            value={formatTime(activitiesStats.data?.totalTime)}
             icon={<FaClock />}
-            subtitle="+8% this week"
           />
           <StatCard
             title="Avg Pace"
-            value={formatPace(dummyStatistics.avgPace)}
+            value={formatPace(activitiesStats.data?.avgPace)}
             icon={<FaMedal />}
-            subtitle="-5s better"
           />
         </div>
 
@@ -52,7 +54,7 @@ export const DashboardPage = () => {
             <h3 className="text-base font-bold text-white mb-4">Weekly Distance</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={dummyStatistics.weeklyData}>
+                <LineChart data={activitiesStats.data?.weeklyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="day" stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
                   <YAxis stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
@@ -89,7 +91,7 @@ export const DashboardPage = () => {
             <h3 className="text-base font-bold text-white mb-4">Monthly Distance</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={dummyStatistics.monthlyData}>
+                <BarChart data={activitiesStats.data?.monthlyData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="month" stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
                   <YAxis stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
@@ -116,9 +118,7 @@ export const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Activities & Challenges */}
         <div className="grid md:grid-cols-3 gap-6 animate-slide-up-delay-3">
-          {/* Recent Activities */}
           <div className="md:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-white">Recent Activities</h3>
@@ -127,7 +127,7 @@ export const DashboardPage = () => {
               </Link>
             </div>
             <div className="space-y-3">
-              {dummyActivities.slice(0, 5).map((activity) => (
+              {activities?.data?.slice(0, 5).map((activity) => (
                 <div
                   key={activity.id}
                   className="glass-card glass-card-hover p-4 cursor-pointer"
@@ -139,7 +139,7 @@ export const DashboardPage = () => {
                         <span className="text-xs text-slate-500">{formatDate(activity.date)}</span>
                       </div>
                       <div className="flex items-center gap-5 text-sm">
-                        <span className="font-medium text-[#FF6B00]">{activity.distance} km</span>
+                        <span className="font-medium text-[#FF6B00]">{activity.distance.toFixed(2)} km</span>
                         <span className="text-slate-400">{formatTime(activity.duration)}</span>
                         <span className="text-slate-400">{formatPace(activity.pace)}/km</span>
                       </div>
@@ -153,61 +153,11 @@ export const DashboardPage = () => {
               ))}
             </div>
           </div>
-
-          {/* Challenges */}
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white">Challenges</h3>
-              <Link to="/challenges" className="text-[#FF6B00] text-sm font-medium hover:text-[#E040FB] transition-colors duration-300">
-                View all →
-              </Link>
-            </div>
-            <div className="space-y-3">
-              {dummyChallenges.slice(0, 3).map((challenge) => (
-                <div key={challenge.id} className="glass-card p-4">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="text-2xl">{challenge.badge}</div>
-                    <div>
-                      <div className="font-semibold text-white text-sm">{challenge.name}</div>
-                      <div className="text-xs text-slate-500">{challenge.daysRemaining} days left</div>
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex justify-between text-xs text-slate-400 mb-1.5">
-                      <span>{challenge.current} km</span>
-                      <span>{challenge.target} km</span>
-                    </div>
-                    <div className="w-full bg-white/[0.06] rounded-full h-1.5">
-                      <div
-                        className="progress-gradient h-1.5 rounded-full transition-all"
-                        style={{ width: `${(challenge.current / challenge.target) * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Challenges/>
         </div>
 
-        {/* Badges */}
         <div className="mt-8">
-          <h3 className="text-base font-bold text-white mb-4">Badges</h3>
-          <div className="grid grid-cols-4 md:grid-cols-8 gap-3">
-            {dummyBadges.map((badge) => (
-              <div
-                key={badge.id}
-                className={`glass-card p-3 text-center group transition-all duration-300 ${
-                  !badge.earned ? "opacity-30" : "hover:bg-white/[0.07] hover:shadow-lg hover:shadow-orange-500/10"
-                }`}
-              >
-                <div className={`text-2xl mb-1.5 ${badge.earned ? "animate-float" : ""}`} style={{ animationDelay: `${badge.id * 0.3}s` }}>
-                  {badge.icon}
-                </div>
-                <div className="text-[10px] font-medium text-slate-400">{badge.name}</div>
-              </div>
-            ))}
-          </div>
+           <Badges/>
         </div>
       </main>
       <BottomNav />

@@ -12,7 +12,7 @@ export const formatTime = (seconds) => {
 export const formatPace = (secondsPerKm) => {
   const m = Math.floor(secondsPerKm / 60);
   const s = Math.floor(secondsPerKm % 60);
-  return `${m}'${s.toString().padStart(2, '0')}"`;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 };
 
 export const formatDate = (dateString) => {
