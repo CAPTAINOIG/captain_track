@@ -68,7 +68,7 @@ export const ActivitiesPage = () => {
     e.stopPropagation();
     const activityId = activity._id || activity.id;
     const url = buildShareUrl(activityId);
-    const title = activity?.name || "Check out my run on Captain Track";
+    const title = activity?.title || "Check out my run on Captain Track";
     const km =
       typeof activity?.distance === "number"
         ? `${activity.distance.toFixed(2)} km`
@@ -246,74 +246,77 @@ export const ActivitiesPage = () => {
 
                   <Link
                     to={`/activities/${activityId}`}
-                    className="block p-5"
+                    className="block p-4 sm:p-5"
                   >
-                    <div className="flex items-start gap-4">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center gap-3 min-w-0">
-                            <img
-                              src={profilePictureData?.data?.url}
-                              alt=""
-                              className="w-10 h-10 rounded-full ring-2 ring-white/10 shrink-0"
-                            />
-                            <div className="min-w-0">
-                              <div className="font-semibold text-white truncate">{activity?.title || "Morning Run"}</div>
-                              <div className="text-xs text-slate-500">{formatDate(activity.date)}</div>
-                            </div>
-                          </div>
-
-                          <div
-                            role="group"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                            className="flex items-center shrink-0 rounded-xl bg-white/[0.04] border border-white/10 p-1 backdrop-blur-md shadow-lg shadow-black/20"
-                          >
-                            <button
-                              type="button"
-                              onClick={(e) => handleShare(e, activity)}
-                              className="w-8 h-8 rounded-lg text-slate-300 hover:bg-[#5865F2]/15 hover:text-[#5865F2] transition-all duration-200 flex items-center justify-center cursor-pointer"
-                              title="Share activity"
-                            >
-                              <FaShare className="text-[13px]" />
-                            </button>
-                            <div className="w-px h-4 bg-white/10 mx-0.5" />
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openEdit(activity);
-                              }}
-                              className="w-8 h-8 rounded-lg text-slate-300 hover:bg-[#FF6B00]/15 hover:text-[#FF6B00] transition-all duration-200 flex items-center justify-center cursor-pointer"
-                              title="Edit activity"
-                            >
-                              <FaEdit className="text-[13px]" />
-                            </button>
-                            <div className="w-px h-4 bg-white/10 mx-0.5" />
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setConfirmDeleteId(isConfirmingDelete ? null : activityId);
-                              }}
-                              className={`w-8 h-8 rounded-lg transition-all duration-200 flex items-center justify-center cursor-pointer ${
-                                isConfirmingDelete
-                                  ? "bg-red-500/15 text-red-400"
-                                  : "text-slate-300 hover:bg-red-500/15 hover:text-red-400"
-                              }`}
-                              title="Delete activity"
-                            >
-                              <FaTrash className="text-[13px]" />
-                            </button>
-                          </div>
+                    {/* Header: avatar + title + action buttons */}
+                    <div className="flex items-center justify-between gap-2 mb-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <img
+                          src={profilePictureData?.data?.url}
+                          alt=""
+                          className="w-9 h-9 sm:w-10 sm:h-10 rounded-full ring-2 ring-white/10 shrink-0"
+                        />
+                        <div className="min-w-0">
+                          <div className="font-semibold text-white text-sm sm:text-base truncate">{activity?.title || "Morning Run"}</div>
+                          <div className="text-xs text-slate-500">{formatDate(activity.date)}</div>
                         </div>
-                        <div className="grid grid-cols-4 gap-4">
+                      </div>
+
+                      <div
+                        role="group"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                        className="flex items-center shrink-0 rounded-xl bg-white/[0.04] border border-white/10 p-1 backdrop-blur-md shadow-lg shadow-black/20"
+                      >
+                        <button
+                          type="button"
+                          onClick={(e) => handleShare(e, activity)}
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-slate-300 hover:bg-[#5865F2]/15 hover:text-[#5865F2] transition-all duration-200 flex items-center justify-center cursor-pointer"
+                          title="Share activity"
+                        >
+                          <FaShare className="text-[12px] sm:text-[13px]" />
+                        </button>
+                        <div className="w-px h-4 bg-white/10 mx-0.5" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openEdit(activity);
+                          }}
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-slate-300 hover:bg-[#FF6B00]/15 hover:text-[#FF6B00] transition-all duration-200 flex items-center justify-center cursor-pointer"
+                          title="Edit activity"
+                        >
+                          <FaEdit className="text-[12px] sm:text-[13px]" />
+                        </button>
+                        <div className="w-px h-4 bg-white/10 mx-0.5" />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setConfirmDeleteId(isConfirmingDelete ? null : activityId);
+                          }}
+                          className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg transition-all duration-200 flex items-center justify-center cursor-pointer ${
+                            isConfirmingDelete
+                              ? "bg-red-500/15 text-red-400"
+                              : "text-slate-300 hover:bg-red-500/15 hover:text-red-400"
+                          }`}
+                          title="Delete activity"
+                        >
+                          <FaTrash className="text-[12px] sm:text-[13px]" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Body: stats + map side by side on sm+, stacked on mobile */}
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="grid grid-cols-4 gap-3 sm:gap-4">
                           <div>
-                            <div className="text-lg font-bold text-[#FF6B00]">
+                            <div className="text-base sm:text-lg font-bold text-[#FF6B00]">
                               {typeof activity.distance === "number"
                                 ? activity.distance.toFixed(2)
                                 : activity.distance}
@@ -321,25 +324,25 @@ export const ActivitiesPage = () => {
                             <div className="text-xs text-slate-500">km</div>
                           </div>
                           <div>
-                            <div className="text-lg font-bold text-white">
+                            <div className="text-base sm:text-lg font-bold text-white whitespace-nowrap">
                               {formatTime(activity.duration)}
                             </div>
                             <div className="text-xs text-slate-500">time</div>
                           </div>
                           <div>
-                            <div className="text-lg font-bold text-white">
+                            <div className="text-base sm:text-lg font-bold text-white whitespace-nowrap">
                               {formatPace(activity.pace)}
                             </div>
                             <div className="text-xs text-slate-500">pace</div>
                           </div>
                           <div>
-                            <div className="text-lg font-bold text-white">{activity.calories}</div>
+                            <div className="text-base sm:text-lg font-bold text-white">{activity.calories}</div>
                             <div className="text-xs text-slate-500">cal</div>
                           </div>
                         </div>
                       </div>
                       {activity.coords && activity.coords.length > 0 && (
-                        <div className="w-32 h-24 rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0">
+                        <div className="w-full h-28 sm:w-32 sm:h-24 rounded-xl overflow-hidden ring-1 ring-white/10 shrink-0">
                           <MapContainer
                             center={activity.coords[0]}
                             zoom={13}

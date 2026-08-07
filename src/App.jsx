@@ -24,7 +24,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
       <Toaster position="top-right" />
-        <div className="px-10">
+        <div className="px-4 sm:px-6 lg:px-10">
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
