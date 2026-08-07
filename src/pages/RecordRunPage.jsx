@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Navbar } from "../components/layout/Navbar";
 import { BottomNav } from "../components/layout/BottomNav";
-import { Button } from "../components/ui/Button";
 import {
   MapContainer,
   TileLayer,
@@ -31,7 +29,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-const LiveMap = ({ isRunning, position }) => {
+const LiveMap = ({ position }) => {
   const map = useMap();
   useEffect(() => {
     if (position) {
@@ -42,11 +40,7 @@ const LiveMap = ({ isRunning, position }) => {
 };
 
 export const RecordRunPage = () => {
-  const {
-    mutateAsync: createActivities,
-    isPending: isCreateActivityLoading,
-    isError: isCreateActivityError,
-  } = useCreateActivity();
+  const { mutateAsync: createActivities, isPending: isCreateActivityLoading, isError: isCreateActivityError } = useCreateActivity();
 
   const navigate = useNavigate();
 
@@ -248,16 +242,13 @@ export const RecordRunPage = () => {
         likes: [],
       };
       try {
-        const res = await createActivities(newActivity);
+        await createActivities(newActivity);
         toast.success("Activity saved successfully!");
       } catch (error) {
-        const errorMsg =
-          error.response?.data?.message || error.message || "An error occurred";
+        const errorMsg = error.response?.data?.message || error.message || "An error occurred";
         toast.error(errorMsg);
-        toast.error("Failed to save activity. Please try again.");
       }
     }
-
     // Always reset state and navigate, even if no distance was recorded
     setIsRunning(false);
     setIsPaused(false);
@@ -284,16 +275,22 @@ export const RecordRunPage = () => {
         {/* Map Area */}
         <div className="flex-1 relative">
           <MapContainer
-            center={position}
+            center={position || [0, 0]}
             zoom={15}
             style={{ height: "100%", width: "100%" }}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-            <LiveMap isRunning={isRunning} position={position} />
-            <Marker position={position} />
-            {path?.length > 1 && (
-              <Polyline positions={path} color="#FF6B00" weight={4} />
-            )}
+            {position && <LiveMap isRunning={isRunning} position={position} />}
+            {position && <Marker position={position} />}
+            {Array.isArray(path) &&
+              path.length > 1 &&
+              path.every(
+                (p) =>
+                  Array.isArray(p) &&
+                  p.length >= 2 &&
+                  typeof p[0] === "number" &&
+                  typeof p[1] === "number",
+              ) && <Polyline positions={path} color="#FF6B00" weight={4} />}
           </MapContainer>
 
           {/* Back Button */}
@@ -381,9 +378,8 @@ export const RecordRunPage = () => {
                 </>
               )}
             </div>
-
-            {/* Test Mode Toggle */}
-            <button
+            {/* this will be used later */}
+            {/* <button
               onClick={() => setTestMode(!testMode)}
               className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
                 testMode
@@ -394,7 +390,7 @@ export const RecordRunPage = () => {
               {testMode
                 ? "Test Mode: ON"
                 : "Test Mode: OFF (Simulate Movement)"}
-            </button>
+            </button> */}
           </div>
         </div>
       </div>

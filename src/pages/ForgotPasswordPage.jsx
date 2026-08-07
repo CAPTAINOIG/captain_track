@@ -2,10 +2,22 @@ import { Link } from "react-router-dom";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 
 export const ForgotPasswordPage = () => {
-  const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState("");
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+
+  const onSubmit = (data) => {
+    setSubmittedEmail(data.email);
+    setSent(true);
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] flex items-center justify-center px-4 relative overflow-hidden">
@@ -40,33 +52,39 @@ export const ForgotPasswordPage = () => {
               </div>
               <h1 className="text-2xl font-bold text-white">Check your email</h1>
               <p className="text-slate-400 mt-2">
-                We've sent a password reset link to <span className="text-white font-medium">{email}</span>
+                We've sent a password reset link to <span className="text-white font-medium">{submittedEmail}</span>
               </p>
             </>
           )}
         </div>
 
         {!sent ? (
-          <form className="space-y-4" onSubmit={(e) => { e.preventDefault(); setSent(true); }}>
+          <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
             <div className="text-left">
               <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
               <Input
                 type="email"
                 placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                {...register("email", {
+                  required: "Email is required",
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: "Invalid email address",
+                  },
+                })}
               />
+              {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>}
             </div>
-            <Button className="w-full">Send Reset Link</Button>
+            <Button className="w-full cursor-pointer">Send Reset Link</Button>
           </form>
         ) : (
           <Link to="/login">
-            <Button className="w-full">Back to Login</Button>
+            <Button className="w-full cursor-pointer">Back to Login</Button>
           </Link>
         )}
 
         <p className="text-center text-slate-400 mt-6">
-          <Link to="/login" className="text-[#FF6B00] font-medium hover:text-[#E040FB] transition-colors duration-300">
+          <Link to="/login" className="text-[#FF6B00] font-medium hover:text-[#E040FB] transition-colors duration-300 cursor-pointer">
             Back to sign in
           </Link>
         </p>

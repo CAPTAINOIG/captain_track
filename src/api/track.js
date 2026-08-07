@@ -94,3 +94,23 @@ export const useGetProfilePicture = () => {
     },
   });
 }
+
+export const useDeleteActivity = () => {
+  return useMutation({
+    mutationKey: ['userId'],
+    mutationFn: async (id) => {
+      const res = await axiosInstance.delete(`/api/activities/${id}`);
+      return res.data
+    },
+  })
+}
+
+export const useUpdateActivity = () => {
+  return useMutation({
+    mutationKey: ['activity'],
+    mutationFn: async ({ id, data }) => {
+      const res = await axiosInstance.put(`/api/activities/${id}`, data);
+      return res.data
+    },
+  })
+}

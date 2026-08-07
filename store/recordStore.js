@@ -1,8 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
-const resolve = (value, prev) =>
-  typeof value === "function" ? value(prev) : value;
+const resolve = (value, prev) => typeof value === "function" ? value(prev) : value;
 
 const useRecordStore = create(
   persist(

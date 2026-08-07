@@ -24,6 +24,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <Router>
       <Toaster position="top-right" />
+        <div className="px-10">
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -41,6 +42,7 @@ function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
+        </div>
     </Router>
     </QueryClientProvider>
   );
