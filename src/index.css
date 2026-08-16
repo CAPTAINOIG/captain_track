@@ -152,6 +152,87 @@ code {
   opacity: 0.3;
 }
 
+/* ── Premium page backgrounds ── */
+.bg-premium-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center top, black 0%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at center top, black 0%, transparent 75%);
+  pointer-events: none;
+}
+
+.bg-premium-radial {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(255, 107, 0, 0.15), transparent 60%),
+    radial-gradient(900px 500px at 100% 10%, rgba(224, 64, 251, 0.14), transparent 60%),
+    radial-gradient(900px 600px at 50% 110%, rgba(255, 107, 0, 0.10), transparent 65%);
+  pointer-events: none;
+}
+
+.bg-premium-dots {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: 20px 20px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 20%, transparent 80%);
+  pointer-events: none;
+}
+
+.page-shell {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #0A0E1A;
+}
+
+/* ── Image-backed page backgrounds ── */
+.bg-page-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-page-image::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(10, 14, 26, 0.88) 0%, rgba(10, 14, 26, 0.78) 40%, rgba(10, 14, 26, 0.92) 100%),
+    radial-gradient(ellipse at top, rgba(255, 107, 0, 0.12), transparent 55%),
+    radial-gradient(ellipse at bottom, rgba(224, 64, 251, 0.10), transparent 55%);
+}
+
+.bg-page-landing {
+  background-image: url("/src/assets/run1.jpg");
+}
+
+.bg-page-login {
+  background-image: url("/src/assets/run2.jpg");
+}
+
+.bg-page-register {
+  background-image: url("/src/assets/run3.jpg");
+}
+
+.page-shell > .page-main {
+  position: relative;
+  z-index: 10;
+  flex: 1 1 auto;
+}
+
 /* ── Sonner toast overrides ── */
 [data-sonner-toast][data-type='error'] {
   background: rgba(30, 41, 59, 0.95) !important;

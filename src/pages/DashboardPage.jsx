@@ -28,22 +28,22 @@ export const DashboardPage = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 animate-slide-up-delay-1">
           <StatCard
             title="Total Distance"
-            value={`${activitiesStats.data?.totalDistance} km`}
+            value={isActivitiesStatsPending ? "..." : `${activitiesStats.data?.totalDistance || 0} km`}
             icon={<FaRoute />}
           />
           <StatCard
             title="Total Runs"
-            value={activitiesStats.data?.totalRuns}
+            value={isActivitiesStatsPending ? "..." : (activitiesStats.data?.totalRuns || 0)}
             icon={<FaRunning />}
           />
           <StatCard
             title="Total Time"
-            value={formatTime(activitiesStats.data?.totalTime)}
+            value={isActivitiesStatsPending ? "..." : formatTime(activitiesStats.data?.totalTime || 0)}
             icon={<FaClock />}
           />
           <StatCard
             title="Avg Pace"
-            value={formatPace(activitiesStats.data?.avgPace)}
+            value={isActivitiesStatsPending ? "..." : formatPace(activitiesStats.data?.avgPace || 0)}
             icon={<FaMedal />}
           />
         </div>
@@ -54,7 +54,7 @@ export const DashboardPage = () => {
             <h3 className="text-base font-bold text-white mb-4">Weekly Distance</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={activitiesStats.data?.weeklyData}>
+                <LineChart data={activitiesStats.data?.weeklyData || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="day" stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
                   <YAxis stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
@@ -91,7 +91,7 @@ export const DashboardPage = () => {
             <h3 className="text-base font-bold text-white mb-4">Monthly Distance</h3>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={activitiesStats.data?.monthlyData}>
+                <BarChart data={activitiesStats.data?.monthlyData || []}>
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
                   <XAxis dataKey="month" stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
                   <YAxis stroke="#64748B" tick={{ fill: '#64748B', fontSize: 12 }} />
@@ -127,30 +127,69 @@ export const DashboardPage = () => {
               </Link>
             </div>
             <div className="space-y-3">
-              {activities?.data?.slice(0, 5).map((activity) => (
-                <div
-                  key={activity.id}
-                  className="glass-card glass-card-hover p-4 cursor-pointer"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-sm font-semibold text-white">{activity.type}</span>
-                        <span className="text-xs text-slate-500">{formatDate(activity.date)}</span>
+              {activitiesLoading ? (
+                // Loading skeleton
+                Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="glass-card p-4 animate-pulse">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <div className="h-4 bg-white/10 rounded w-16"></div>
+                          <div className="h-3 bg-white/10 rounded w-20"></div>
+                        </div>
+                        <div className="flex items-center gap-5">
+                          <div className="h-4 bg-white/10 rounded w-12"></div>
+                          <div className="h-4 bg-white/10 rounded w-12"></div>
+                          <div className="h-4 bg-white/10 rounded w-12"></div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-5 text-sm">
-                        <span className="font-medium text-[#FF6B00]">{activity.distance.toFixed(2)} km</span>
-                        <span className="text-slate-400">{formatTime(activity.duration)}</span>
-                        <span className="text-slate-400">{formatPace(activity.pace)}/km</span>
+                      <div className="text-right">
+                        <div className="h-4 bg-white/10 rounded w-8 mb-1"></div>
+                        <div className="h-3 bg-white/10 rounded w-6"></div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm font-bold text-white">{activity.calories}</div>
-                      <div className="text-xs text-slate-500">cal</div>
                     </div>
                   </div>
+                ))
+              ) : activities?.data?.length > 0 ? (
+                activities.data.slice(0, 5).map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="glass-card glass-card-hover p-4 cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-sm font-semibold text-white">{activity.type}</span>
+                          <span className="text-xs text-slate-500">{formatDate(activity.date)}</span>
+                        </div>
+                        <div className="flex items-center gap-5 text-sm">
+                          <span className="font-medium text-[#FF6B00]">{activity.distance?.toFixed(2) || 0} km</span>
+                          <span className="text-slate-400">{formatTime(activity.duration)}</span>
+                          <span className="text-slate-400">{formatPace(activity.pace)}/km</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm font-bold text-white">{activity.calories || 0}</div>
+                        <div className="text-xs text-slate-500">cal</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                // Empty state
+                <div className="glass-card p-8 text-center">
+                  <FaRunning className="mx-auto text-4xl text-slate-600 mb-4" />
+                  <p className="text-slate-400 mb-2">No activities yet</p>
+                  <p className="text-xs text-slate-500">Start by recording your first run!</p>
+                  <Link 
+                    to="/record" 
+                    className="inline-flex items-center gap-2 mt-4 bg-gradient-to-r from-[#FF6B00] to-[#E040FB] text-white px-4 py-2 rounded-lg font-semibold text-sm shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:scale-[1.03] transition-all duration-300"
+                  >
+                    <FaRunning size={14} />
+                    Record Run
+                  </Link>
                 </div>
-              ))}
+              )}
             </div>
           </div>
           <Challenges/>

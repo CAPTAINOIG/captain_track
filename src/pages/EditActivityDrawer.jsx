@@ -86,7 +86,7 @@ const EditActivityDrawer = ({ open, activity, onClose }) => {
         placement="right"
         onClose={onClose}
         open={open}
-        width={480}
+        width={800}
         destroyOnClose
         extra={
           <div className="flex gap-2">
@@ -130,8 +130,6 @@ const EditActivityDrawer = ({ open, activity, onClose }) => {
                 Distance (km)
               </label>
               <Input
-                type="number"
-                step="0.01"
                 placeholder="5.00"
                 {...register("distance", {
                   min: { value: 0, message: "Must be ≥ 0" },
@@ -149,7 +147,6 @@ const EditActivityDrawer = ({ open, activity, onClose }) => {
                 Duration (s)
               </label>
               <Input
-                type="number"
                 placeholder="1800"
                 {...register("duration", {
                   min: { value: 0, message: "Must be ≥ 0" },
@@ -167,7 +164,6 @@ const EditActivityDrawer = ({ open, activity, onClose }) => {
                 Calories
               </label>
               <Input
-                type="number"
                 placeholder="350"
                 {...register("calories", {
                   min: { value: 0, message: "Must be ≥ 0" },

@@ -114,3 +114,44 @@ export const useUpdateActivity = () => {
     },
   })
 }
+
+export const useCreateChallege = () => {
+  return useMutation({
+    mutationKey: ['challenge'],
+    mutationFn: async (data) => {
+      const res = await axiosInstance.post('/api/challenges', data)
+      return res.data
+    },
+  });
+}
+
+export const useGetChallenges = () => {
+  const queryClient = useQueryClient();
+  return useQuery({
+    queryKey: ["challenges"],
+    queryFn: async () => {
+      const res = await axiosInstance.get("/api/challenges");
+      return res.data;
+    },
+  });
+};
+
+export const useUpdateChallenges = () => {
+  return useMutation({
+    mutationKey: ['challenge'],
+    mutationFn: async ({id, data}) => {
+      const res = await axiosInstance.put(`/api/challenges/${id}`, data);
+      return res.data
+    },  
+  })
+}
+
+export const useDeleteChallenge = () => {
+   return useMutation({
+    mutationKey: ['userId'],
+    mutationFn: async (id) => {
+      const res = await axiosInstance.delete(`/api/challenges/${id}`);
+      return res.data
+    },
+  })
+}
