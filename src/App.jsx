@@ -15,7 +15,7 @@ import { ChallengesPage } from "./pages/ChallengesPage";
 import { CommunityPage } from "./pages/CommunityPage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { SettingsPage } from "./pages/SettingsPage";
-import Admin from "./pages/Admin";
+import Admin from "./pages/AdminPages/Admin";
 
 const queryClient = new QueryClient();
 

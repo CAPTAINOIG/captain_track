@@ -25,12 +25,9 @@ export const ActivityDetailsPage = () => {
       <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
         <Navbar />
         <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          {/* Map Skeleton */}
           <div className="glass-card overflow-hidden mb-6 animate-slide-up">
             <div className="h-80 bg-white/5 animate-pulse"></div>
           </div>
-
-          {/* Activity Info Skeleton */}
           <div className="glass-card p-6 mb-6 animate-slide-up-delay-1">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-14 h-14 rounded-full bg-white/10 animate-pulse"></div>
@@ -48,8 +45,6 @@ export const ActivityDetailsPage = () => {
                 </div>
               ))}
             </div>
-
-            {/* Splits Skeleton */}
             <div className="space-y-4">
               <div className="w-16 h-5 bg-white/10 rounded animate-pulse"></div>
               <div className="space-y-2">
@@ -63,8 +58,6 @@ export const ActivityDetailsPage = () => {
               </div>
             </div>
           </div>
-
-          {/* Comments Skeleton */}
           <div className="glass-card p-6 animate-slide-up-delay-2">
             <div className="w-20 h-5 bg-white/10 rounded animate-pulse mb-4"></div>
             <div className="space-y-4">

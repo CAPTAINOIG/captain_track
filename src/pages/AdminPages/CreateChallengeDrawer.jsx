@@ -5,68 +5,65 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { FaTimes, FaSave } from "react-icons/fa";
-import { Input } from "../components/ui/Input";
-import { Button } from "../components/ui/Button";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
+import { useCreateChallege } from "../../api/track";
 
-const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setEditingChallenge }) => {
+const CreateChallengeDrawer = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const isOpen = searchParams.get('action') === 'edit';
-  const challengeId = searchParams.get('id');
+  const isOpen = searchParams.get('action') === 'create';
+
+  const { mutateAsync: createChallenge, isPending: isCreateChallengeLoading, isError: isCreateChallengeError } = useCreateChallege();
   
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  // Find the challenge to edit
-  const challenge = challenges.find(c => c.id.toString() === challengeId);
-
   const onClose = () => {
     navigate('/admin', { replace: true });
-    setEditingChallenge(null);
     reset();
   };
 
   useEffect(() => {
-    if (isOpen && challenge) {
-      setEditingChallenge(challenge);
+    if (isOpen) {
       reset({
-        name: challenge.name || "",
-        description: challenge.description || "",
-        target: challenge.target?.toString() || "",
-        current: challenge.current?.toString() || "",
-        participants: challenge.participants?.toString() || "",
-        daysRemaining: challenge.daysRemaining?.toString() || "",
-        badge: challenge.badge || "🏅",
-        color: challenge.color || "#FF6B00",
+        name: "",
+        description: "",
+        target: "",
+        current: "",
+        participants: "",
+        daysRemaining: "",
+        badge: "🏅",
+        color: "#FF6B00",
       });
     }
-  }, [isOpen, challenge, reset, setEditingChallenge]);
+  }, [isOpen, reset]);
 
   const onSubmit = async (formData) => {
-    if (!editingChallenge) return;
-    
+    console.log(formData)
+    const newChallenge = {
+      id: Date.now(),
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      target: Number(formData.target) || 0,
+      current: Number(formData.current) || 0,
+      participants: Number(formData.participants) || 0,
+      daysRemaining: Number(formData.daysRemaining) || 0,
+      badge: formData.badge.trim() || "🏅",
+      color: formData.color || "#FF6B00",
+    };
     try {
-      const updatedChallenge = {
-        ...editingChallenge,
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        target: Number(formData.target) || 0,
-        current: Number(formData.current) || 0,
-        participants: Number(formData.participants) || 0,
-        daysRemaining: Number(formData.daysRemaining) || 0,
-        badge: formData.badge.trim() || "🏅",
-        color: formData.color || "#FF6B00",
-      };
 
-      setChallenges((prev) => 
-        prev.map((challenge) => 
-          challenge.id === editingChallenge.id ? updatedChallenge : challenge
-        )
-      );
-      
-      toast.success(`Challenge "${updatedChallenge.name}" updated successfully!`);
-      onClose();
+      const res = await createChallenge(newChallenge)
+      console.log(res)
+
+      // if (createChallenge) {
+      //   setChallenges((prev) => [newChallenge, ...prev]);
+      //   toast.success(`Challenge "${newChallenge.name}" created successfully!`);
+      //   onClose();
+      // }
     } catch (error) {
-      const msg = error?.response?.data?.message || error?.message || "Failed to update challenge";
+      console.log(error?.message)
+      const msg = error?.response?.data?.message || error?.message || "Failed to create challenge";
       toast.error(msg);
     }
   };
@@ -97,19 +94,19 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
         title={
           <div>
             <span className="text-[#FF6B00] text-[0.65rem] font-semibold tracking-[0.3em] uppercase block mb-2">
-              Edit
+              Create New
             </span>
             <div className="text-xl font-bold text-white tracking-tight">
-              Edit Challenge
+              Add Challenge
             </div>
             <div className="text-sm text-slate-400 mt-1">
-              Update the challenge details below.
+              Create a new challenge for the community.
             </div>
           </div>
         }
         placement="right"
         onClose={onClose}
-        open={isOpen && !!challenge}
+        open={isOpen}
         width={800}
         extra={
           <div className="flex gap-2">
@@ -128,7 +125,7 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
               className="cursor-pointer bg-gradient-to-r from-[#FF6B00] to-[#E040FB] text-white flex items-center gap-2"
             >
               <FaSave size={14} />
-              Update Challenge
+              Create Challenge
             </Button>
           </div>
         }
@@ -267,4 +264,4 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
   );
 };
 
-export default EditChallengeDrawer;
+export default CreateChallengeDrawer;

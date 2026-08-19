@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaEdit, FaTrash, FaPlusCircle } from 'react-icons/fa';
 import { toast, Toaster } from 'sonner';
-import { dummyChallenges } from '../data/dummyData';
-import { Navbar } from "../components/layout/Navbar";
-import { BottomNav } from "../components/layout/BottomNav";
-import CreateChallengeDrawer from './CreateChallengeDrawer';
-import EditChallengeDrawer from './EditChallengeDrawer';
+import { dummyChallenges } from '../../data/dummyData';
+import { Navbar } from "../../components/layout/Navbar";
+import { BottomNav } from "../../components/layout/BottomNav";
+import CreateChallengeDrawer from '../AdminPages/CreateChallengeDrawer';
+import EditChallengeDrawer from '../AdminPages/EditChallengeDrawer';
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -35,8 +35,6 @@ const Admin = () => {
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
       <Navbar />
       <Toaster position="top-right" />
-      
-      {/* Header Section */}
       <div className="border-b border-white/[0.06]">
         <div className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex items-center justify-between">
@@ -44,7 +42,7 @@ const Admin = () => {
               <span className="text-[#FF6B00] text-[0.65rem] font-semibold tracking-[0.3em] uppercase block mb-2">
                 Dashboard
               </span>
-              <h1 className="text-3xl font-extrabold text-white tracking-tight">
+              <h1 className="md:text-3xl text-xl font-extrabold text-white tracking-tight">
                 Challenge Management
               </h1>
             </div>
