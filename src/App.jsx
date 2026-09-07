@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Toaster } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { LandingPage } from "./pages/LandingPage";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
@@ -16,10 +17,42 @@ import { CommunityPage } from "./pages/CommunityPage";
 import { ExplorePage } from "./pages/ExplorePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import Admin from "./pages/AdminPages/Admin";
+import { RecordingEngine } from "./engine/RecordingEngine";
+import { SyncManager } from "./engine/syncManager";
+import useRecordStore from "../store/recordStore";
 
 const queryClient = new QueryClient();
 
 function App() {
+  const ensureSubscribed = useRecordStore((s) => s.ensureSubscribedToEngine);
+
+  useEffect(() => {
+    ensureSubscribed();
+    SyncManager.start();
+    let cancelled = false;
+    RecordingEngine.recoverOrBoot()
+      .then((recovered) => {
+        if (cancelled) return;
+        if (recovered && recovered.status !== "IDLE") {
+          try {
+            import("sonner").then(({ toast }) => {
+              toast.info("Active session recovered", {
+                description: "Recording was paused — resume when ready.",
+                duration: 5000,
+              });
+            });
+          } catch (_) {
+            /* ignore */
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      SyncManager.stop();
+    };
+  }, [ensureSubscribed]);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Router>

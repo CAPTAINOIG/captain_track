@@ -9,25 +9,11 @@ import {
   useMap,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import { FaPlay, FaPause, FaStop } from "react-icons/fa";
-import { useCreateActivity } from "../api/track";
+import { FaPlay, FaPause, FaStop, FaInfoCircle } from "react-icons/fa";
 import { toast } from "sonner";
 import useRecordStore from "../../store/recordStore";
-
-// Calculate distance between two lat/lng points in km using Haversine formula
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Earth radius in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
+import { RecordingEngine } from "../engine/RecordingEngine";
+import { SyncManager } from "../engine/syncManager";
 
 const LiveMap = ({ position }) => {
   const map = useMap();
@@ -40,170 +26,92 @@ const LiveMap = ({ position }) => {
 };
 
 export const RecordRunPage = () => {
-  const { mutateAsync: createActivities, isPending: isCreateActivityLoading, isError: isCreateActivityError } = useCreateActivity();
-
   const navigate = useNavigate();
 
-  const time = useRecordStore((state) => state.time)
-  const distance = useRecordStore((state) => state.distance)
-  const calories = useRecordStore((state) => state.calories)
-  const position = useRecordStore((state) => state.position)
-  const path = useRecordStore((state) => state.path)
-  const isRunning = useRecordStore((state) => state.isRunning)
-  const isPaused = useRecordStore((state) => state.isPaused)
-  const setTime = useRecordStore((state) => state.setTime)
-  const setDistance = useRecordStore((state) => state.setDistance)
-  const setCalories = useRecordStore((state) => state.setCalories)
-  const setPosition = useRecordStore((state) => state.setPosition)
-  const setPath = useRecordStore((state) => state.setPath)
-  const setIsRunning = useRecordStore((state) => state.setIsRunning)
-  const setIsPaused = useRecordStore((state) => state.setIsPaused)
+  const time = useRecordStore((state) => state.time);
+  const distance = useRecordStore((state) => state.distance);
+  const calories = useRecordStore((state) => state.calories);
+  const position = useRecordStore((state) => state.position);
+  const path = useRecordStore((state) => state.path);
+  const status = useRecordStore((state) => state.status);
+  const isRunning = useRecordStore((state) => state.isRunning);
+  const isPaused = useRecordStore((state) => state.isPaused);
+  const gpsError = useRecordStore((state) => state.gpsError);
+  const ensureSubscribed = useRecordStore((s) => s.ensureSubscribedToEngine);
 
-  const watchId = useRef(null);
-  const lastPosition = useRef(null);
-  const [locationError, setLocationError] = useState(null);
-  const [testMode, setTestMode] = useState(false);
-  const testIntervalRef = useRef(null);
+  const [uiTick, setUiTick] = useState(0);
+  const [initialMapCenter, setInitialMapCenter] = useState(null);
+  const [bgWarningVisible, setBgWarningVisible] = useState(false);
+  const wakeLockRef = useRef(null);
+  const refreshTimerRef = useRef(null);
 
-  // Get initial position on page load (try high accuracy first, then low)
   useEffect(() => {
-    if (navigator.geolocation) {
-      // Try high accuracy first
+    ensureSubscribed();
+  }, [ensureSubscribed]);
+
+  useEffect(() => {
+    if (navigator.geolocation && !initialMapCenter) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setPosition([pos.coords.latitude, pos.coords.longitude]);
-          setLocationError(null);
+          setInitialMapCenter([pos.coords.latitude, pos.coords.longitude]);
         },
-        (error) => {
-          console.warn("High accuracy failed, trying low accuracy:", error);
-          // Fallback to low accuracy
-          navigator.geolocation.getCurrentPosition(
-            (pos) => {
-              setPosition([pos.coords.latitude, pos.coords.longitude]);
-              setLocationError(null);
-            },
-            (err) => {
-              setLocationError(err.message);
-              console.error("Geolocation error:", err);
-            },
-            { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 },
-          );
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+        () => {},
+        { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 }
       );
     }
+  }, [initialMapCenter]);
+
+  useEffect(() => {
+    refreshTimerRef.current = setInterval(() => {
+      setUiTick((t) => t + 1);
+    }, 500);
+    return () => {
+      if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
+    };
   }, []);
 
-  // Timer for time tracking
-  useEffect(() => {
-    let timer;
-    if (isRunning && !isPaused) {
-      timer = setInterval(() => {
-        setTime((t) => t + 1);
-      }, 1000);
+  const requestWakeLock = async () => {
+    if (!("wakeLock" in navigator)) return;
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request("screen");
+      wakeLockRef.current.addEventListener("release", () => {});
+    } catch (_) {
+      /* ignore */
     }
-    return () => clearInterval(timer);
-  }, [isRunning, isPaused]);
+  };
 
-  // Test mode simulation — simulates jogging at ~10 km/h in a consistent direction
+  const releaseWakeLock = async () => {
+    if (wakeLockRef.current) {
+      try {
+        await wakeLockRef.current.release();
+      } catch (_) {
+        /* ignore */
+      }
+      wakeLockRef.current = null;
+    }
+  };
+
   useEffect(() => {
-    if (testMode && isRunning && !isPaused) {
-      const direction = Math.random() * 2 * Math.PI; // Pick a random heading once
-      const speedKmH = 10; // ~10 km/h jogging pace
-      const intervalMs = 2000; // Update every 2 seconds
-      const distPerTick = (speedKmH / 3600) * (intervalMs / 1000); // km per tick
-      const dLat = (distPerTick / 6371) * (180 / Math.PI) * Math.cos(direction);
-      const dLon = (distPerTick / 6371) * (180 / Math.PI) * Math.sin(direction);
-
-      testIntervalRef.current = setInterval(() => {
-        setPosition((prevPos) => {
-          // Add slight natural variation (±10%)
-          const jitter = 0.9 + Math.random() * 0.2;
-          const newPos = [
-            prevPos[0] + dLat * jitter,
-            prevPos[1] + dLon * jitter,
-          ];
-          if (lastPosition.current) {
-            const dist = calculateDistance(
-              lastPosition.current[0],
-              lastPosition.current[1],
-              newPos[0],
-              newPos[1],
-            );
-            setDistance((d) => d + dist);
-            setCalories((c) => c + dist * 60);
-            setPath((p) => [...p, newPos]);
-          } else {
-            setPath([newPos]);
-          }
-          lastPosition.current = newPos;
-          return newPos;
-        });
-      }, intervalMs);
+    if (isRunning) {
+      requestWakeLock();
     } else {
-      if (testIntervalRef.current) {
-        clearInterval(testIntervalRef.current);
-      }
+      releaseWakeLock();
     }
     return () => {
-      if (testIntervalRef.current) {
-        clearInterval(testIntervalRef.current);
-      }
+      releaseWakeLock();
     };
-  }, [testMode, isRunning, isPaused]);
+  }, [isRunning]);
 
-  // Geolocation tracking
   useEffect(() => {
-    if (!isRunning || isPaused || testMode) {
-      if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current);
-        watchId.current = null;
-      }
-      return;
-    }
-
-    watchId.current = navigator.geolocation.watchPosition(
-      (pos) => {
-        const newPos = [pos.coords.latitude, pos.coords.longitude];
-        const accuracy = pos.coords.accuracy; // in meters
-        setPosition(newPos);
-        setLocationError(null);
-
-        // Ignore inaccurate GPS readings (accuracy > 20 meters)
-        if (accuracy > 20) return;
-
-        if (lastPosition.current) {
-          const dist = calculateDistance(
-            lastPosition.current[0],
-            lastPosition.current[1],
-            newPos[0],
-            newPos[1],
-          );
-          if (dist > 0.01) {
-            // Only update if moved more than 10 meters (filters GPS drift)
-            setDistance((d) => d + dist);
-            setCalories((c) => c + dist * 60); // Rough estimate: ~60 cal/km
-            setPath((p) => [...p, newPos]);
-            lastPosition.current = newPos; // Only update reference when real movement detected
-          }
-        } else {
-          setPath([newPos]);
-          lastPosition.current = newPos; // Set initial reference position
-        }
-      },
-      (error) => {
-        console.error("Geolocation watch error:", error);
-        setLocationError(error.message);
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 },
-    );
-
-    return () => {
-      if (watchId.current) {
-        navigator.geolocation.clearWatch(watchId.current);
+    if (!("wakeLock" in navigator) || typeof document === "undefined") return;
+    const onVisible = async () => {
+      if (document.visibilityState === "visible" && isRunning) {
+        await requestWakeLock();
       }
     };
-  }, [isRunning, isPaused]);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [isRunning]);
 
   const formatTime = (seconds) => {
     const h = Math.floor(seconds / 3600);
@@ -222,64 +130,75 @@ export const RecordRunPage = () => {
     return `${m}'${s.toString().padStart(2, "0")}"`;
   };
 
-  const handleStop = async () => {
-    // Only save activity if there's actual distance recorded
-    if (distance > 0) {
-      const newActivity = {
-        id: Date.now(),
-        userId: 1,
-        date: new Date().toISOString(),
-        type: "Run",
-        distance: distance,
-        duration: time,
-        pace: pace,
-        avgSpeed: distance > 0 && time > 0 ? distance / (time / 3600) : 0,
-        calories: Math.floor(calories),
-        elevation: 0,
-        coords: path,
-        splits: [],
-        comments: [],
-        likes: [],
-      };
-      try {
-        await createActivities(newActivity);
-        toast.success("Activity saved successfully!");
-      } catch (error) {
-        const errorMsg = error.response?.data?.message || error.message || "An error occurred";
-        toast.error(errorMsg);
-      }
+  const handleStart = async () => {
+    try {
+      await RecordingEngine.start();
+    } catch (err) {
+      const msg = (err && err.message) || "Could not start recording";
+      toast.error(msg);
     }
-    // Always reset state and navigate, even if no distance was recorded
-    setIsRunning(false);
-    setIsPaused(false);
-    setTime(0);
-    setDistance(0);
-    setCalories(0);
-    setPath([]);
-    lastPosition.current = null;
+  };
+
+  const handlePause = async () => {
+    try {
+      await RecordingEngine.pause();
+    } catch (_) {
+      /* ignore */
+    }
+  };
+
+  const handleResume = async () => {
+    try {
+      await RecordingEngine.resume();
+    } catch (_) {
+      /* ignore */
+    }
+  };
+
+  const handleStop = async () => {
+    try {
+      const result = await RecordingEngine.stop();
+      if (result && result.saved) {
+        if (SyncManager.isOnline()) {
+          toast.success("Activity saved — syncing to server", {
+            description: "If offline, it will upload automatically when online.",
+          });
+        } else {
+          toast.success("Activity saved locally", {
+            description: "It will upload automatically when internet returns.",
+          });
+        }
+      } else if (result && !result.saved) {
+        toast.info("No distance recorded — nothing to save");
+      }
+    } catch (err) {
+      toast.error((err && err.message) || "Failed to stop recording");
+    }
     navigate("/activities");
   };
 
-  const handlePause = () => {
-    setIsRunning(false);
-  };
+  const mapCenter = position || initialMapCenter || [0, 0];
+  const showStatusBadge = status === "PAUSED" || status === "RUNNING";
 
   return (
     <div className="min-h-screen bg-[#0A0E1A] pb-20 md:pb-0">
-      {locationError && (
+      {gpsError && (
         <div className="fixed top-0 left-0 right-0 bg-red-500/90 backdrop-blur-md text-white p-3 text-center z-[60] text-sm font-medium">
-          Location Error: {locationError} — Please enable location services!
+          Location Error: {gpsError} — Please enable location services!
         </div>
       )}
+
       <div className="h-screen flex flex-col">
-        {/* Map Area */}
         <div className="flex-1 relative">
           <MapContainer
-            center={position || [0, 0]}
+            center={mapCenter}
             zoom={15}
             style={{ height: "100%", width: "100%" }}
           >
-            <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+            <TileLayer
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              errorTileUrl=""
+            />
             {position && <LiveMap isRunning={isRunning} position={position} />}
             {position && <Marker position={position} />}
             {Array.isArray(path) &&
@@ -289,46 +208,62 @@ export const RecordRunPage = () => {
                   Array.isArray(p) &&
                   p.length >= 2 &&
                   typeof p[0] === "number" &&
-                  typeof p[1] === "number",
+                  typeof p[1] === "number"
               ) && <Polyline positions={path} color="#FF6B00" weight={4} />}
           </MapContainer>
 
-          {/* Back Button */}
-          <div className="absolute top-4 left-4 right-4 flex justify-between z-[400]">
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-start z-[400] gap-3">
             <button
               onClick={() => window.history.back()}
               className="bg-[#0A0E1A]/80 backdrop-blur-md text-white p-3 rounded-xl border border-white/10 shadow-lg hover:bg-[#0A0E1A] transition-all duration-300"
             >
               ← Back
             </button>
+            <div className="flex flex-col items-end gap-2">
+              {showStatusBadge && (
+                <div
+                  className={`px-3 py-1.5 rounded-full text-xs font-semibold backdrop-blur-md border shadow-lg ${
+                    status === "RUNNING"
+                      ? "bg-green-500/20 text-green-300 border-green-500/40"
+                      : "bg-yellow-500/20 text-yellow-300 border-yellow-500/40"
+                  }`}
+                >
+                  {status === "RUNNING" ? "● RECORDING" : "❚❚ PAUSED"}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => setBgWarningVisible(true)}
+                className="bg-[#0A0E1A]/80 backdrop-blur-md text-slate-300 p-3 rounded-xl border border-white/10 shadow-lg hover:bg-[#0A0E1A] hover:text-white transition-all duration-300"
+                title="Background recording info"
+              >
+                <FaInfoCircle />
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Stats & Controls Panel */}
         <div className="bg-[#0A0E1A] border-t border-white/[0.06] p-6">
           <div className="text-center mb-6">
-            {/* Timer */}
-            <div className="text-5xl md:text-6xl font-mono font-extrabold text-white mb-6 tracking-wider">
+            <div
+              className="text-5xl md:text-6xl font-mono font-extrabold text-white mb-6 tracking-wider"
+              data-ui-tick={uiTick}
+            >
               {formatTime(time)}
             </div>
 
-            {/* Stats Grid */}
             <div className="grid grid-cols-4 gap-3">
               <div className="glass-card p-3 text-center">
                 <div className="text-xl md:text-2xl font-bold gradient-text">
                   {distance.toFixed(2)}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                  KM
-                </div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">KM</div>
               </div>
               <div className="glass-card p-3 text-center">
                 <div className="text-xl md:text-2xl font-bold text-white">
                   {formatPace(pace)}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                  PACE
-                </div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">PACE</div>
               </div>
               <div className="glass-card p-3 text-center">
                 <div className="text-xl md:text-2xl font-bold text-white">
@@ -336,39 +271,43 @@ export const RecordRunPage = () => {
                     ? (distance / (time / 3600)).toFixed(1)
                     : "0.0"}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                  KM/H
-                </div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">KM/H</div>
               </div>
               <div className="glass-card p-3 text-center">
                 <div className="text-xl md:text-2xl font-bold text-white">
                   {Math.floor(calories)}
                 </div>
-                <div className="text-[10px] text-slate-500 font-medium mt-0.5">
-                  CAL
-                </div>
+                <div className="text-[10px] text-slate-500 font-medium mt-0.5">CAL</div>
               </div>
             </div>
           </div>
 
-          {/* Controls */}
           <div className="flex flex-col items-center gap-4">
             <div className="flex items-center justify-center gap-6">
-              {!isRunning ? (
+              {!isRunning && !isPaused ? (
                 <button
-                  onClick={() => setIsRunning(true)}
+                  onClick={handleStart}
                   className="w-20 h-20 rounded-full bg-gradient-to-br from-[#FF6B00] to-[#E040FB] flex items-center justify-center text-white shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-110 transition-all duration-300 animate-pulse-glow cursor-pointer"
                 >
                   <FaPlay className="text-xl ml-1" />
                 </button>
               ) : (
                 <>
-                  <button
-                    className="w-16 h-16 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/[0.15] transition-all duration-300 cursor-pointer"
-                    onClick={handlePause}
-                  >
-                    <FaPause className="text-lg" />
-                  </button>
+                  {isRunning ? (
+                    <button
+                      className="w-16 h-16 rounded-full bg-white/[0.08] backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/[0.15] transition-all duration-300 cursor-pointer"
+                      onClick={handlePause}
+                    >
+                      <FaPause className="text-lg" />
+                    </button>
+                  ) : (
+                    <button
+                      className="w-16 h-16 rounded-full bg-green-500/20 backdrop-blur-md border-2 border-green-500/40 flex items-center justify-center text-green-400 hover:bg-green-500 hover:text-white transition-all duration-300 cursor-pointer"
+                      onClick={handleResume}
+                    >
+                      <FaPlay className="text-lg ml-1" />
+                    </button>
+                  )}
                   <button
                     className="w-20 h-20 rounded-full bg-red-500/20 border-2 border-red-500/50 flex items-center justify-center text-red-400 hover:bg-red-500 hover:text-white hover:scale-110 transition-all duration-300 cursor-pointer"
                     onClick={handleStop}
@@ -378,22 +317,62 @@ export const RecordRunPage = () => {
                 </>
               )}
             </div>
-            {/* this will be used later */}
-            {/* <button
-              onClick={() => setTestMode(!testMode)}
-              className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${
-                testMode
-                  ? "bg-gradient-to-r from-[#FF6B00] to-[#E040FB] text-white shadow-lg shadow-orange-500/20"
-                  : "bg-white/[0.06] border border-white/10 text-slate-400 hover:text-white hover:bg-white/[0.1]"
-              }`}
-            >
-              {testMode
-                ? "Test Mode: ON"
-                : "Test Mode: OFF (Simulate Movement)"}
-            </button> */}
           </div>
         </div>
       </div>
+
+      {bgWarningVisible && (
+        <div className="fixed inset-0 z-[700] flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="w-full max-w-md bg-[#111827] border border-white/10 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-300">
+                  <FaInfoCircle />
+                </div>
+                <h3 className="text-lg font-bold text-white">Background Recording</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setBgWarningVisible(false)}
+                className="text-slate-400 hover:text-white text-xl"
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="text-sm text-slate-300 space-y-3">
+              <p>
+                <strong className="text-white">GPS works offline.</strong> Your phone's GPS
+                chip does not need mobile data. Captain Track collects positions locally,
+                even with the internet off.
+              </p>
+              <p>
+                <strong className="text-yellow-300">Mobile browsers limit background
+                execution.</strong> For best reliability, keep Captain Track in the
+                foreground and keep your screen on (we enable "Wake Lock" automatically
+                when supported).
+              </p>
+              <p>
+                <strong className="text-green-300">Workouts are never lost.</strong> Even
+                if you close the tab, lose signal, or the browser suspends, your session
+                is saved on-device. On reopen it will be restored.
+              </p>
+              <p>
+                For uninterrupted screen-off recording (like Strava), a native mobile
+                app with a foreground location service is required.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setBgWarningVisible(false)}
+              className="mt-6 w-full py-3 rounded-xl bg-gradient-to-r from-[#FF6B00] to-[#E040FB] text-white font-semibold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all cursor-pointer"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      )}
+
       <BottomNav />
     </div>
   );

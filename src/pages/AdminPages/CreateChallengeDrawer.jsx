@@ -15,7 +15,7 @@ const CreateChallengeDrawer = () => {
   const isOpen = searchParams.get('action') === 'create';
 
   const { mutateAsync: createChallenge, isPending: isCreateChallengeLoading, isError: isCreateChallengeError } = useCreateChallege();
-  
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
   const onClose = () => {
@@ -39,7 +39,6 @@ const CreateChallengeDrawer = () => {
   }, [isOpen, reset]);
 
   const onSubmit = async (formData) => {
-    console.log(formData)
     const newChallenge = {
       id: Date.now(),
       name: formData.name.trim(),
@@ -52,17 +51,10 @@ const CreateChallengeDrawer = () => {
       color: formData.color || "#FF6B00",
     };
     try {
-
       const res = await createChallenge(newChallenge)
-      console.log(res)
-
-      // if (createChallenge) {
-      //   setChallenges((prev) => [newChallenge, ...prev]);
-      //   toast.success(`Challenge "${newChallenge.name}" created successfully!`);
-      //   onClose();
-      // }
+      toast.success(`Challenge "${newChallenge.name}" created successfully!`);
+      onClose();
     } catch (error) {
-      console.log(error?.message)
       const msg = error?.response?.data?.message || error?.message || "Failed to create challenge";
       toast.error(msg);
     }
@@ -125,7 +117,7 @@ const CreateChallengeDrawer = () => {
               className="cursor-pointer bg-gradient-to-r from-[#FF6B00] to-[#E040FB] text-white flex items-center gap-2"
             >
               <FaSave size={14} />
-              Create Challenge
+              {isCreateChallengeLoading ? 'Creating...' : 'Create Challenge'}
             </Button>
           </div>
         }
@@ -169,7 +161,7 @@ const CreateChallengeDrawer = () => {
               <Input
                 min="0"
                 placeholder="0"
-                {...register("target", { 
+                {...register("target", {
                   required: "Target is required",
                   min: { value: 0, message: "Must be ≥ 0" }
                 })}
@@ -186,7 +178,7 @@ const CreateChallengeDrawer = () => {
               <Input
                 min="0"
                 placeholder="0"
-                {...register("current", { 
+                {...register("current", {
                   required: "Current progress is required",
                   min: { value: 0, message: "Must be ≥ 0" }
                 })}
@@ -206,7 +198,7 @@ const CreateChallengeDrawer = () => {
               <Input
                 min="0"
                 placeholder="0"
-                {...register("participants", { 
+                {...register("participants", {
                   required: "Participants count is required",
                   min: { value: 0, message: "Must be ≥ 0" }
                 })}
@@ -223,7 +215,7 @@ const CreateChallengeDrawer = () => {
               <Input
                 min="0"
                 placeholder="0"
-                {...register("daysRemaining", { 
+                {...register("daysRemaining", {
                   required: "Days remaining is required",
                   min: { value: 0, message: "Must be ≥ 0" }
                 })}
