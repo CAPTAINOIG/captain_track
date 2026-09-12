@@ -1,23 +1,70 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Drawer, ConfigProvider, theme } from "antd";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { FaTimes, FaSave } from "react-icons/fa";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
+import { useUpdateChallenge } from "../../api/track";
+
+const toDateInput = (d) => {
+  if (!d) return "";
+  try {
+    const dt = typeof d === "string" ? new Date(d) : d instanceof Date ? d : new Date(d);
+    if (Number.isNaN(dt.getTime())) return "";
+    const pad = (n) => String(n).padStart(2, "0");
+    return `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}`;
+  } catch (_) {
+    return "";
+  }
+};
 
 const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setEditingChallenge }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isOpen = searchParams.get('action') === 'edit';
   const challengeId = searchParams.get('id');
-  
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
 
-  // Find the challenge to edit
-  const challenge = challenges.find(c => c.id.toString() === challengeId);
+  const { mutateAsync: updateChallenge, isPending: isUpdateLoading } = useUpdateChallenge();
+  const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm();
+
+  const challenge = challenges.find(c => String(c.id ?? c._id) === String(challengeId));
+  const startDateVal = watch("startDate");
+
+  useEffect(() => {
+    if (!isOpen || !challenge) return;
+    setEditingChallenge(challenge);
+    reset({
+      name: challenge.name || "",
+      description: challenge.description || "",
+      target: challenge.target !== undefined ? String(challenge.target) : "",
+      current: challenge.current !== undefined ? String(challenge.current) : "",
+      distanceKm: challenge.distanceKm !== undefined ? String(challenge.distanceKm) : "",
+      participants: challenge.participants !== undefined ? String(challenge.participants) : "",
+      maxParticipants: challenge.maxParticipants?.toString() ?? (challenge.participants?.toString() ?? ""),
+      daysRemaining: challenge.daysRemaining?.toString() ?? "",
+      badge: challenge.badge || "🏅",
+      color: challenge.color || "#FF6B00",
+      startDate: toDateInput(challenge.startDate) || toDateInput(new Date()),
+      endDate: toDateInput(challenge.endDate) || "",
+    });
+  }, [isOpen, challenge, reset, setEditingChallenge]);
+
+  useEffect(() => {
+    if (!startDateVal) return;
+    const st = new Date(startDateVal);
+    const edRaw = watch("endDate");
+    if (!edRaw) return;
+    const ed = new Date(edRaw);
+    if (Number.isNaN(st.getTime()) || Number.isNaN(ed.getTime())) return;
+    const diffMs = ed.getTime() - st.getTime();
+    if (diffMs < 0) return;
+    const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    setValue("daysRemaining", days, { shouldValidate: false });
+  }, [startDateVal, watch, setValue]);
+
+  const todayInput = useMemo(() => toDateInput(new Date()), []);
 
   const onClose = () => {
     navigate('/admin', { replace: true });
@@ -25,44 +72,60 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
     reset();
   };
 
-  useEffect(() => {
-    if (isOpen && challenge) {
-      setEditingChallenge(challenge);
-      reset({
-        name: challenge.name || "",
-        description: challenge.description || "",
-        target: challenge.target?.toString() || "",
-        current: challenge.current?.toString() || "",
-        participants: challenge.participants?.toString() || "",
-        daysRemaining: challenge.daysRemaining?.toString() || "",
-        badge: challenge.badge || "🏅",
-        color: challenge.color || "#FF6B00",
-      });
-    }
-  }, [isOpen, challenge, reset, setEditingChallenge]);
-
   const onSubmit = async (formData) => {
     if (!editingChallenge) return;
-    
+
+    const start = formData.startDate ? new Date(formData.startDate) : new Date(editingChallenge.startDate || Date.now());
+    const end = formData.endDate ? new Date(formData.endDate) : new Date(editingChallenge.endDate || Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const diffMs = Math.max(0, end.getTime() - start.getTime());
+    const daysRemaining = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+
+    const participantsRaw = Number(formData.participants);
+    const participants = Number.isFinite(participantsRaw) ? participantsRaw : (Number(editingChallenge.participants) || 1);
+    const maxParticipants = Number(formData.maxParticipants) || Math.max(1, participants || 1);
+
+    const distanceKm = Number(formData.distanceKm);
+    const target = Number(formData.target);
+    const current = Number(formData.current);
+
+    const safeDistance = Number.isFinite(distanceKm) && distanceKm > 0 ? distanceKm : (Number(editingChallenge.distanceKm) || 0);
+    const safeTarget = Number.isFinite(target) && target > 0 ? target : (safeDistance > 0 ? safeDistance : (Number(editingChallenge.target) || 0));
+    const safeCurrent = Number.isFinite(current) ? Math.max(0, current) : (Number(editingChallenge.current) || 0);
+
     try {
       const updatedChallenge = {
         ...editingChallenge,
         name: formData.name.trim(),
         description: formData.description.trim(),
-        target: Number(formData.target) || 0,
-        current: Number(formData.current) || 0,
-        participants: Number(formData.participants) || 0,
-        daysRemaining: Number(formData.daysRemaining) || 0,
+        target: safeTarget,
+        current: safeCurrent,
+        distanceKm: safeDistance,
+        participants,
+        maxParticipants,
+        joinedParticipants: editingChallenge.joinedParticipants || [],
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+        daysRemaining,
         badge: formData.badge.trim() || "🏅",
         color: formData.color || "#FF6B00",
       };
 
-      setChallenges((prev) => 
-        prev.map((challenge) => 
-          challenge.id === editingChallenge.id ? updatedChallenge : challenge
-        )
-      );
-      
+      const recordId = editingChallenge.id ?? editingChallenge._id;
+
+      try {
+        if (recordId) {
+          await updateChallenge({ id: recordId, data: updatedChallenge });
+        }
+      } catch (_) {
+        /* local update still happens */
+      }
+
+      if (typeof setChallenges === "function") {
+        setChallenges((prev) =>
+          prev.map((c) => (String(c.id ?? c._id) === String(recordId) ? updatedChallenge : c))
+        );
+      }
+
       toast.success(`Challenge "${updatedChallenge.name}" updated successfully!`);
       onClose();
     } catch (error) {
@@ -128,7 +191,7 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
               className="cursor-pointer bg-gradient-to-r from-[#FF6B00] to-[#E040FB] text-white flex items-center gap-2"
             >
               <FaSave size={14} />
-              Update Challenge
+              {isUpdateLoading ? 'Saving...' : 'Update Challenge'}
             </Button>
           </div>
         }
@@ -164,17 +227,19 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Target *
+                Target Goal *
               </label>
               <Input
+                type="number"
                 min="0"
-                placeholder="0"
-                {...register("target", { 
-                  required: "Target is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
+                step="any"
+                placeholder="e.g. 5 for 5km"
+                {...register("target", {
+                  required: "Target goal is required",
+                  min: { value: 0, message: "Must be ≥ 0" },
                 })}
                 className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
               />
@@ -184,14 +249,15 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Current Progress *
+                Current Progress
               </label>
               <Input
+                type="number"
                 min="0"
+                step="any"
                 placeholder="0"
-                {...register("current", { 
-                  required: "Current progress is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
+                {...register("current", {
+                  min: { value: 0, message: "Must be ≥ 0" },
                 })}
                 className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
               />
@@ -201,17 +267,37 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Participants *
+                Maximum Participants *
               </label>
               <Input
-                min="0"
-                placeholder="0"
-                {...register("participants", { 
-                  required: "Participants count is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
+                type="number"
+                min="1"
+                step="1"
+                placeholder="e.g. 200"
+                {...register("maxParticipants", {
+                  required: "Maximum participants is required",
+                  min: { value: 1, message: "Must be ≥ 1" },
+                })}
+                className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
+              />
+              {errors.maxParticipants && (
+                <p className="text-red-400 text-sm mt-1">{errors.maxParticipants.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                Current Participants
+              </label>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                placeholder="1"
+                {...register("participants", {
+                  min: { value: 1, message: "Must be ≥ 1" },
                 })}
                 className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
               />
@@ -219,21 +305,54 @@ const EditChallengeDrawer = ({ challenges, setChallenges, editingChallenge, setE
                 <p className="text-red-400 text-sm mt-1">{errors.participants.message}</p>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Race Distance (KM) *
+            </label>
+            <Input
+              type="number"
+              min="0.1"
+              step="0.1"
+              placeholder="e.g. 5"
+              {...register("distanceKm", {
+                required: "Race distance is required",
+                min: { value: 0.1, message: "Distance must be greater than 0" },
+              })}
+              className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
+            />
+            {errors.distanceKm && (
+              <p className="text-red-400 text-sm mt-1">{errors.distanceKm.message}</p>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Days Remaining *
+                Start Date *
               </label>
-              <Input
-                min="0"
-                placeholder="0"
-                {...register("daysRemaining", { 
-                  required: "Days remaining is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
-                })}
-                className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
+              <input
+                type="date"
+                {...register("startDate", { required: "Start date is required" })}
+                className="w-full h-10 px-3 rounded-lg bg-white/[0.05] text-white border border-white/10 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/50 focus:border-[#FF6B00]/50"
               />
-              {errors.daysRemaining && (
-                <p className="text-red-400 text-sm mt-1">{errors.daysRemaining.message}</p>
+              {errors.startDate && (
+                <p className="text-red-400 text-sm mt-1">{errors.startDate.message}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                End Date *
+              </label>
+              <input
+                type="date"
+                min={startDateVal || todayInput}
+                {...register("endDate", { required: "End date is required" })}
+                className="w-full h-10 px-3 rounded-lg bg-white/[0.05] text-white border border-white/10 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/50 focus:border-[#FF6B00]/50"
+              />
+              {errors.endDate && (
+                <p className="text-red-400 text-sm mt-1">{errors.endDate.message}</p>
               )}
             </div>
           </div>

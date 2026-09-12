@@ -31,6 +31,27 @@ export const useCreateActivity = () => {
   });
 }
 
+export const createActivity = async (data) => {
+  const res = await axiosInstance.post("/api/activities", data);
+  return res.data;
+};
+
+export const joinChallenge = async (id) => {
+  const res = await axiosInstance.post(`/api/challenges/${id}/join`);
+  return res.data;
+};
+
+export const useJoinChallenge = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ["challenge", "join"],
+    mutationFn: async (id) => joinChallenge(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+    },
+  });
+};
+
 export const useGetActivities = () => {
   const queryClient = useQueryClient();
   return useQuery({
@@ -115,17 +136,21 @@ export const useUpdateActivity = () => {
   })
 }
 
-export const useCreateChallege = () => {
+export const useCreateChallenge = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['challenge'],
     mutationFn: async (data) => {
       const res = await axiosInstance.post('/api/challenges', data)
       return res.data
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+    },
   });
 }
 
-export const useGetChallenges = () => {
+export const useGetChallenge = () => {
   const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["challenges"],
@@ -136,22 +161,30 @@ export const useGetChallenges = () => {
   });
 };
 
-export const useUpdateChallenges = () => {
+export const useUpdateChallenge = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationKey: ['challenge'],
     mutationFn: async ({id, data}) => {
       const res = await axiosInstance.put(`/api/challenges/${id}`, data);
       return res.data
-    },  
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
+    },
   })
 }
 
 export const useDeleteChallenge = () => {
-   return useMutation({
-    mutationKey: ['userId'],
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: ['challenge'],
     mutationFn: async (id) => {
       const res = await axiosInstance.delete(`/api/challenges/${id}`);
       return res.data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["challenges"] });
     },
   })
 }

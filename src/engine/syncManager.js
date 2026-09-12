@@ -4,7 +4,7 @@ import {
   updatePendingActivity,
   deletePendingActivity,
 } from "../utils/idb";
-import { createActivity } from "../api/track";
+import { useCreateActivity } from "../api/track";
 
 const SYNC_STATUSES = Object.freeze({
   PENDING: "PENDING_SYNC",
@@ -94,7 +94,7 @@ class SyncManagerImpl {
       delete payload.syncAttempts;
       delete payload.createdAt;
       delete payload.updatedAt;
-      await createActivity(payload);
+      await useCreateActivity(payload);
       await deletePendingActivity(item.id);
     } catch (err) {
       const isAuthError = err && err.response && err.response.status === 401;

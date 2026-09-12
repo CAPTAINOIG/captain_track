@@ -15,8 +15,8 @@ import EditActivityDrawer from "./EditActivityDrawer";
 export const ActivitiesPage = () => {
   const queryClient = useQueryClient();
   const { data: activities = [], isPending: activitiesLoading, isError: isActivitiesError } = useGetActivities();
-  const { data: profilePictureData } = useGetProfilePicture();
   const { mutateAsync: deleteActivity, isPending: isDeleteActivityLoading } = useDeleteActivity();
+  const { data: profilePictureData } = useGetProfilePicture();
 
   const [search, setSearch] = useState("");
   const [query] = useDebounce(search, 500);

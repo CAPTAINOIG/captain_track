@@ -1,63 +1,99 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Drawer, ConfigProvider, theme } from "antd";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
-import { useQueryClient } from "@tanstack/react-query";
 import { FaTimes, FaSave } from "react-icons/fa";
 import { Input } from "../../components/ui/Input";
 import { Button } from "../../components/ui/Button";
-import { useCreateChallege } from "../../api/track";
+import { useCreateChallenge } from "../../api/track";
+import useAuthStore from "../../../store/auth";
+import { toDateInput } from "../../utils/formatters";
 
 const CreateChallengeDrawer = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const isOpen = searchParams.get('action') === 'create';
 
-  const { mutateAsync: createChallenge, isPending: isCreateChallengeLoading, isError: isCreateChallengeError } = useCreateChallege();
+  const { mutateAsync: createChallenge, isPending: isCreateChallengeLoading } = useCreateChallenge();
+  const { register, handleSubmit, reset, watch, setValue, trigger, formState: { errors } } = useForm();
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
-
-  const onClose = () => {
-    navigate('/admin', { replace: true });
-    reset();
-  };
+  const userId = useAuthStore((s) => s.getUserId && s.getUserId());
+  const startDateVal = watch("startDate");
 
   useEffect(() => {
-    if (isOpen) {
-      reset({
-        name: "",
-        description: "",
-        target: "",
-        current: "",
-        participants: "",
-        daysRemaining: "",
-        badge: "🏅",
-        color: "#FF6B00",
-      });
-    }
+    if (!isOpen) return;
+    const today = new Date();
+    const defaultStart = today;
+    const defaultEnd = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const defaults = {
+      name: "",
+      description: "",
+      target: "",
+      current: "",
+      participants: "",
+      distanceKm: "",
+      maxParticipants: "",
+      daysRemaining: 30,
+      badge: "🏅",
+      color: "#FF6B00",
+      startDate: toDateInput(defaultStart),
+      endDate: toDateInput(defaultEnd),
+    };
+    reset(defaults);
   }, [isOpen, reset]);
+
+  useEffect(() => {
+    if (!startDateVal) return;
+    const st = new Date(startDateVal);
+    const edRaw = watch("endDate");
+    if (!edRaw) return;
+    const ed = new Date(edRaw);
+    if (Number.isNaN(st.getTime()) || Number.isNaN(ed.getTime())) return;
+    const diffMs = ed.getTime() - st.getTime();
+    if (diffMs < 0) return;
+    const days = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+    setValue("daysRemaining", days, { shouldValidate: false });
+  }, [startDateVal, watch, setValue]);
+
+  const participantsVal = watch("participants");
+  useEffect(() => {
+    const maxP = watch("maxParticipants");
+    if (maxP !== undefined && maxP !== "") {
+      trigger("maxParticipants");
+    }
+  }, [participantsVal, watch, trigger]);
+
+  const todayInput = useMemo(() => toDateInput(new Date()), []);
 
   const onSubmit = async (formData) => {
     const newChallenge = {
-      id: Date.now(),
+      userId: userId || null,
+      date: new Date().toISOString(),
       name: formData.name.trim(),
       description: formData.description.trim(),
-      target: Number(formData.target) || 0,
-      current: Number(formData.current) || 0,
-      participants: Number(formData.participants) || 0,
-      daysRemaining: Number(formData.daysRemaining) || 0,
+      distanceKm: Number(formData.distanceKm) || 0,
+      maxParticipants: Number(formData.maxParticipants),
+      // joinedParticipants: userId ? [userId] : [],
+      startDate: formData.startDate ,
+      endDate: formData.endDate,
+      // daysRemaining: formData.daysRemaining.trim(),
       badge: formData.badge.trim() || "🏅",
       color: formData.color || "#FF6B00",
     };
     try {
-      const res = await createChallenge(newChallenge)
+      await createChallenge(newChallenge);
       toast.success(`Challenge "${newChallenge.name}" created successfully!`);
       onClose();
     } catch (error) {
       const msg = error?.response?.data?.message || error?.message || "Failed to create challenge";
       toast.error(msg);
-    }
+    };
+  }
+
+  const onClose = () => {
+    navigate('/admin', { replace: true });
+    reset();
   };
 
   return (
@@ -153,76 +189,81 @@ const CreateChallengeDrawer = () => {
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Target *
+                Maximum Participants *
               </label>
               <Input
-                min="0"
-                placeholder="0"
-                {...register("target", {
-                  required: "Target is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
+                type="number"
+                min="1"
+                step="1"
+                placeholder="e.g. 200"
+                {...register("maxParticipants", {
+                  required: "Maximum participants is required",
+                  min: { value: 1, message: "Must be ≥ 1" },
+                  validate: (val) => {
+                    const p = Number(participantsVal) || 1;
+                    const m = Number(val);
+                    if (Number.isFinite(m) && m < p) return `Must be ≥ initial participants (${p})`;
+                    return true;
+                  },
                 })}
                 className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
               />
-              {errors.target && (
-                <p className="text-red-400 text-sm mt-1">{errors.target.message}</p>
-              )}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Current Progress *
-              </label>
-              <Input
-                min="0"
-                placeholder="0"
-                {...register("current", {
-                  required: "Current progress is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
-                })}
-                className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
-              />
-              {errors.current && (
-                <p className="text-red-400 text-sm mt-1">{errors.current.message}</p>
+              {errors.maxParticipants && (
+                <p className="text-red-400 text-sm mt-1">{errors.maxParticipants.message}</p>
               )}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-300 mb-2">
+              Race Distance (KM) *
+            </label>
+            <Input
+              type="number"
+              min="0.1"
+              step="0.1"
+              placeholder="e.g. 5"
+              {...register("distanceKm", {
+                required: "Race distance is required",
+                min: { value: 0.1, message: "Distance must be greater than 0" },
+              })}
+              className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
+            />
+            {errors.distanceKm && (
+              <p className="text-red-400 text-sm mt-1">{errors.distanceKm.message}</p>
+            )}
+          </div>
+
+           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Participants *
+                Start Date *
               </label>
-              <Input
-                min="0"
-                placeholder="0"
-                {...register("participants", {
-                  required: "Participants count is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
-                })}
-                className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
+              <input
+                type="date"
+                min={todayInput}
+                {...register("startDate", { required: "Start date is required" })}
+                className="w-full h-10 px-3 rounded-lg bg-white/[0.05] text-white border border-white/10 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/50 focus:border-[#FF6B00]/50"
               />
-              {errors.participants && (
-                <p className="text-red-400 text-sm mt-1">{errors.participants.message}</p>
+              {errors.startDate && (
+                <p className="text-red-400 text-sm mt-1">{errors.startDate.message}</p>
               )}
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-300 mb-2">
-                Days Remaining *
+                End Date *
               </label>
-              <Input
-                min="0"
-                placeholder="0"
-                {...register("daysRemaining", {
-                  required: "Days remaining is required",
-                  min: { value: 0, message: "Must be ≥ 0" }
-                })}
-                className="!bg-white/[0.05] !text-white !border-white/10 placeholder-slate-500"
+              <input
+                type="date"
+                min={startDateVal || todayInput}
+                {...register("endDate", { required: "End date is required" })}
+                className="w-full h-10 px-3 rounded-lg bg-white/[0.05] text-white border border-white/10 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-[#FF6B00]/50 focus:border-[#FF6B00]/50"
               />
-              {errors.daysRemaining && (
-                <p className="text-red-400 text-sm mt-1">{errors.daysRemaining.message}</p>
+              {errors.endDate && (
+                <p className="text-red-400 text-sm mt-1">{errors.endDate.message}</p>
               )}
             </div>
           </div>
